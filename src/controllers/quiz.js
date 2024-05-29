@@ -136,16 +136,121 @@ exports.viewScore = async (req, res) => {
   }
 };
 
-exports.viewResult = async (req, res) => {
+exports.viewResponse = async (req, res) => {
   try {
+    let aggPipe = [];
+
+    if (req.params.quizId) {
+      aggPipe.push({
+        $match: {
+          _id: new mongoose.Types.ObjectId(req.params.quizId),
+          isDeleted: false,
+        },
+      });
+    } else {
+      aggPipe.push(
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(req.user._id),
+            isDeleted: false,
+          },
+        },
+        {
+          $sort: {
+            createdAt: -1,
+          },
+        },
+        {
+          $limit: 1,
+        }
+      );
+    }
+
+    aggPipe.push(
+      {
+        $addFields: {
+          topics: {
+            $map: {
+              input: "$topics",
+              as: "topics",
+              in: {
+                $toObjectId: "$$topics",
+              },
+            },
+          },
+        },
+      },
+      {
+        $unwind: {
+          path: "$topics",
+        },
+      },
+      {
+        $lookup: {
+          from: "questionnaires",
+          localField: "topics",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                questionSet: 1,
+                _id: 0,
+              },
+            },
+            {
+              $unwind: {
+                path: "$questionSet",
+              },
+            },
+          ],
+          as: "questionSet",
+        },
+      },
+      {
+        $project: {
+          response: 1,
+          questionSet: 1,
+          score: 1,
+        },
+      }
+    );
+
+    let getData = await Quiz.aggregate(aggPipe);
+    if (!getData.length) return clientErrorResponse(res, "No Data Available!");
+
+    let response = getData[0].response;
+    let abc = [];
+    getData.map((e) => {
+      abc.push(e.questionSet);
+    });
+    let questionSet = abc.flat();
+
+    let feedbackResp = [];
+    let pqr = questionSet.forEach((questionObj) => {
+      let QS = questionObj.questionSet;
+      let res = response.find(
+        (resp) => resp.questionId.toString() === QS._id.toString()
+      );
+
+      if (res) {
+        QS.optedAns = res.option;
+      }
+      feedbackResp.push(QS);
+    });
+
+    return successResponse(res, "Response Data", {
+      resp: feedbackResp,
+      score: getData[0].score,
+    });
   } catch (error) {
+    console.log(error);
     return serverErrorResponse(res);
   }
 };
 
-exports.getResponse = async (req, res) => {
+exports.viewResults = async (req, res) => {
   try {
   } catch (error) {
-    return serverErrorResponse(res);
+    serverErrorResponse(res);
   }
 };
