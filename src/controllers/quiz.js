@@ -98,6 +98,9 @@ exports.viewScore = async (req, res) => {
       },
     ]);
 
+    if (!getData.length)
+      return clientErrorResponse(res, "Please Submit a Quiz!");
+
     let count = 0;
 
     let response = getData[0].response;
@@ -128,6 +131,7 @@ exports.viewScore = async (req, res) => {
 
     return successResponse(res, "Quiz added sucessfully!", count);
   } catch (error) {
+    console.log(error);
     return serverErrorResponse(res, error);
   }
 };

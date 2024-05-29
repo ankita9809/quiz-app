@@ -5,7 +5,9 @@ const quiz = require("../controllers/quiz");
 
 router.post("/submit-quiz", quiz.submitQuiz);
 router.get("/view-score", quiz.viewScore);
-// router.get("/view-result", quiz.viewResult);
+// router.get("/view-response", quiz.viewResponse);
+
+//********************************************* RESULT SCREEN *********************************************//
 // router.get("/get-response/:quizId?", quiz.getResponse);
 
 module.exports = router;
