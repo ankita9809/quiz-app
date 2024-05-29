@@ -7,5 +7,6 @@ exports.apiRoutes = (app) => {
   app.use(require("./auth")); // Auth apis (signup, signin)
 
   // With token authentiication
-  app.use(secureAuth, require("./admin"));
+  app.use(secureAuth, require("./quiz"));
+  app.use(secureAuth, require("./questionnaire"));
 };

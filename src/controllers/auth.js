@@ -56,7 +56,7 @@ exports.login = async (req, res) => {
     const decryptPassword = await decryptData(getData[0].password);
 
     if (req.body.password !== decryptPassword)
-      return clientErrorResponse(res, "Wrong Password!");
+      return clientErrorResponse(res, "Invalid Username/Password!");
 
     let { password, authkey, createdAt, updatedAt, ...rest } = getData[0]._doc;
 
@@ -65,7 +65,7 @@ exports.login = async (req, res) => {
 
     await Users.updateOne(
       { _id: rest._id },
-      { $set: { authkey: token, last_login: Date.now() } },
+      { $set: { authkey: token } },
       { new: true }
     );
 
