@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 // Local impports
 const { Quiz } = require("../models/quiz");
+const { Users } = require("../models/users");
 const {
   clientErrorResponse,
   successResponse,
@@ -128,6 +129,64 @@ exports.viewScore = async (req, res) => {
       { score: count },
       { new: true }
     );
+
+    let getRank = await Quiz.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+                _id: 0,
+              },
+            },
+          ],
+          as: "data",
+        },
+      },
+      {
+        $group: {
+          _id: "$userId",
+          score: {
+            $push: "$score",
+          },
+          name: {
+            $first: "$data.name",
+          },
+        },
+      },
+      {
+        $project: {
+          name: {
+            $first: "$name",
+          },
+          totalQuiz: {
+            $size: "$score",
+          },
+          totalScore: {
+            $sum: "$score",
+          },
+        },
+      },
+      {
+        $sort: {
+          totalScore: -1,
+        },
+      },
+    ]);
+
+    for (let i = 0; i < getRank.length; i++) {
+      getRank[i].rank = i + 1;
+
+      await Users.updateOne(
+        { _id: getRank[i]._id },
+        { rank: getRank[i].rank },
+        { new: true }
+      );
+    }
 
     return successResponse(res, "Quiz added sucessfully!", count);
   } catch (error) {

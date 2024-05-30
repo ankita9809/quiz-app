@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    rank: {
+      type: Number,
+      default: 0,
+    },
     authkey: {
       type: String,
       default: "",

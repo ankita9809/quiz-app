@@ -2,7 +2,11 @@
 const { Users } = require("../models/users");
 const { createToken } = require("../helpers/createToken");
 const { encryptData, decryptData } = require("../helpers/crypto");
-const { clientErrorResponse, successResponse } = require("../helpers/response");
+const {
+  clientErrorResponse,
+  successResponse,
+  serverErrorResponse,
+} = require("../helpers/response");
 
 const getUser = async (query = {}, project = {}) => {
   try {
@@ -70,6 +74,20 @@ exports.login = async (req, res) => {
     );
 
     return successResponse(res, "User Login Successfully!", rest);
+  } catch (error) {
+    serverErrorResponse(res);
+  }
+};
+
+exports.getUser = async (req, res) => {
+  try {
+    let getData = await getUser(
+      { _id: req.user._id },
+      { name: 1, mobile: 1, email: 1, rank: 1 }
+    );
+    if (!getData.length) return clientErrorResponse(res, "Invalid User!");
+
+    return successResponse(res, "User Data!", getData[0]);
   } catch (error) {
     serverErrorResponse(res);
   }
