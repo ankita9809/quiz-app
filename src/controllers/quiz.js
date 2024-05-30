@@ -234,8 +234,8 @@ exports.viewResponse = async (req, res) => {
 
       if (res) {
         QS.optedAns = res.option;
+        feedbackResp.push(QS);
       }
-      feedbackResp.push(QS);
     });
 
     return successResponse(res, "Response Data", {
@@ -243,13 +243,107 @@ exports.viewResponse = async (req, res) => {
       score: getData[0].score,
     });
   } catch (error) {
-    console.log(error);
     return serverErrorResponse(res);
   }
 };
 
 exports.viewResults = async (req, res) => {
   try {
+    let getData = await Quiz.aggregate([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.user._id),
+          isDeleted: false,
+        },
+      },
+      {
+        $addFields: {
+          topics: {
+            $map: {
+              input: "$topics",
+              as: "topics",
+              in: {
+                $toObjectId: "$$topics",
+              },
+            },
+          },
+        },
+      },
+      {
+        $unwind: {
+          path: "$topics",
+        },
+      },
+      {
+        $lookup: {
+          from: "questionnaires",
+          localField: "topics",
+          foreignField: "_id",
+          pipeline: [
+            {
+              $project: {
+                topicName: 1,
+                _id: 0,
+              },
+            },
+          ],
+          as: "questionSet",
+        },
+      },
+      {
+        $addFields: {
+          topic: {
+            $first: "$questionSet.topicName",
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          topic: "$topic",
+          score: "$score",
+          total: {
+            $size: "$response",
+          },
+          submittedOn: "$createdAt",
+        },
+      },
+      {
+        $group: {
+          _id: "$submittedOn",
+          data: {
+            $push: "$$ROOT",
+          },
+          topic: {
+            $push: "$topic",
+          },
+        },
+      },
+      {
+        $project: {
+          _id: {
+            $first: "$data._id",
+          },
+          topic: "$topic",
+          score: {
+            $first: "$data.score",
+          },
+          total: {
+            $first: "$data.total",
+          },
+          submittedOn: {
+            $first: "$data.submittedOn",
+          },
+        },
+      },
+      {
+        $sort: {
+          submittedOn: -1,
+        },
+      },
+    ]);
+    if (!getData.length) return clientErrorResponse(res, "No Data Found!");
+    return successResponse(res, "Result!", getData);
   } catch (error) {
     serverErrorResponse(res);
   }

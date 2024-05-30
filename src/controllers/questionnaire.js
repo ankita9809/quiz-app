@@ -110,6 +110,7 @@ exports.getQns = async (req, res) => {
       },
       {
         $project: {
+          _id: "$questionSet._id",
           question: "$questionSet.question",
           optionOne: "$questionSet.optionOne",
           optionTwo: "$questionSet.optionTwo",
